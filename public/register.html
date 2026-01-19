@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro - Sistema de Incidentes</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/chatbot.js" defer></script>
+  <style>
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f3f4f6;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px 20px;
+      background: #f3f4f6;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #6b7280;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .tab:hover {
+      background: #e5e7eb;
+    }
+    .tab.active {
+      background: #6366f1;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #1e40af;
+    }
+    .warning-box {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #92400e;
+    }
+    .success-box {
+      background: #d1fae5;
+      border-left: 4px solid #10b981;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #065f46;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #374151;
+      font-size: 14px;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    .code-section {
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      border: 2px dashed #d1d5db;
+      margin-top: 16px;
+    }
+    .code-section.active {
+      border-color: #6366f1;
+      background: #eff6ff;
+    }
+    .captcha-box {
+      background: #f8f9fa;
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      text-align: center;
+    }
+    .captcha-question {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 12px;
+    }
+    .captcha-input {
+      width: 120px;
+      text-align: center;
+      font-size: 20px;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .captcha-input:focus {
+      border-color: #667eea;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s;
+      font-size: 15px;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    .link {
+      color: #6366f1;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .link:hover {
+      color: #4f46e5;
+      text-decoration: underline;
+    }
+    .divider {
+      text-align: center;
+      margin: 20px 0;
+      position: relative;
+    }
+    .divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #e5e7eb;
+    }
+    .divider span {
+      background: white;
+      padding: 0 16px;
+      position: relative;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .password-strength {
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .password-strength-bar {
+      height: 100%;
+      width: 0%;
+      transition: all 0.3s;
+      border-radius: 2px;
+    }
+    .strength-weak { background: #ef4444; width: 33%; }
+    .strength-medium { background: #f59e0b; width: 66%; }
+    .strength-strong { background: #10b981; width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card" style="max-width: 520px;">
+      <div class="logo-large">IS</div>
+      <h2>Crear Cuenta</h2>
+      <p style="text-align: center; color: #6b7280; margin-bottom: 24px;">
+        Sistema de Gestión de Incidentes de Ciberseguridad
+      </p>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="solicitar">
+          📨 Solicitar Código
+        </button>
+        <button class="tab" data-tab="registro">
+          ✍️ Registrarse
+        </button>
+      </div>
+
+      <!-- TAB 1: Solicitar Código -->
+      <div id="tab-solicitar" class="tab-content active">
+        <div class="info-box">
+          💡 <strong>¿Necesitas un rol especial?</strong><br>
+          Técnico, Analista o Auditor requieren un código de verificación.
+        </div>
+        
+        <div class="warning-box">
+          ℹ️ <strong>¿Solo quieres reportar incidentes?</strong><br>
+          Ve directamente a la pestaña "Registrarse" y elige el rol <strong>Cliente</strong> (no requiere código).
+        </div>
+
+        <form id="requestCodeForm">
+          <div class="form-group">
+            <label for="nombre">👤 Nombre completo</label>
+            <input type="text" id="nombre" placeholder="Ej: Juan Pérez García" required>
+          </div>
+
+          <div class="form-group">
+            <label for="emailRequest">📧 Correo electrónico</label>
+            <input type="email" id="emailRequest" placeholder="correo@ejemplo.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="rolRequest">🎭 Rol que deseas</label>
+            <select id="rolRequest" required>
+              <option value="Técnico">Técnico</option>
+              <option value="Analista">Analista</option>
+              <option value="Auditor">Auditor</option>
+            </select>
+          </div>
+
+          <!-- CAPTCHA 1 -->
+          <div class="captcha-box">
+            <div class="captcha-question">
+              🔢 <span id="captchaQuestion1">¿Cuánto es 5 + 3?</span>
+            </div>
+            <input 
+              type="number" 
+              id="captchaInput1" 
+              class="captcha-input"
+              placeholder="?"
+              required>
+            <button type="button" id="refreshCaptcha1" class="btn-secondary">
+              🔄 Nuevo Captcha
+            </button>
+          </div>
+
+          <button type="submit" class="btn-primary" id="requestBtn">
+            📨 Solicitar Código
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>¿Ya tienes código?</span>
+        </div>
+
+        <button class="btn" style="width: 100%; background: #f3f4f6; color: #374151; padding: 10px;" onclick="cambiarTab('registro')">
+          Ir al registro →
+        </button>
+      </div>
+
+      <!-- TAB 2: Registro -->
+      <div id="tab-registro" class="tab-content">
+        <div class="warning-box">
+          ⚠️ <strong>Importante:</strong> Si eliges un rol especial, necesitarás el código que recibiste por email.
+        </div>
+
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="nombreReg">👤 Nombre completo</label>
+            <input type="text" id="nombreReg" placeholder="Juan Pérez García" required>
+          </div>
+
+          <div class="form-group">
+            <label for="email">📧 Correo electrónico</label>
+            <input type="email" id="email" placeholder="correo@ejemplo.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="password">🔒 Contraseña (mínimo 6 caracteres)</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+            <div class="password-strength">
+              <div id="passwordStrengthBar" class="password-strength-bar"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="rol">🎭 Rol</label>
+            <select id="rol">
+              <option value="Cliente">Cliente (sin código)</option>
+              <option value="Técnico">Técnico (requiere código)</option>
+              <option value="Analista">Analista (requiere código)</option>
+              <option value="Auditor">Auditor (requiere código)</option>
+            </select>
+          </div>
+
+          <div id="codigoSection" class="code-section" style="display:none;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="codigo">🎫 Código de verificación</label>
+              <input type="text" id="codigo" placeholder="Ingresa tu código" style="text-transform: uppercase;">
+              <p style="margin: 8px 0 0 0; font-size: 13px; color: #6b7280;">
+                ℹ️ Revisa tu email (y carpeta de spam) para obtener el código
+              </p>
+            </div>
+          </div>
+
+          <!-- CAPTCHA 2 -->
+          <div class="captcha-box">
+            <div class="captcha-question">
+              🔢 <span id="captchaQuestion2">¿Cuánto es 7 - 4?</span>
+            </div>
+            <input 
+              type="number" 
+              id="captchaInput2" 
+              class="captcha-input"
+              placeholder="?"
+              required>
+            <button type="button" id="refreshCaptcha2" class="btn-secondary">
+              🔄 Nuevo Captcha
+            </button>
+          </div>
+
+          <button type="submit" class="btn-primary" id="registerBtn">
+            ✅ Crear Cuenta
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>¿No tienes código?</span>
+        </div>
+
+        <button class="btn" style="width: 100%; background: #f3f4f6; color: #374151; padding: 10px;" onclick="cambiarTab('solicitar')">
+          ← Solicitar código primero
+        </button>
+      </div>
+
+      <!-- Mensajes -->
+      <div id="errorMsg" style="display: none; margin-top: 16px;"></div>
+      <div id="successMsg" style="display: none; margin-top: 16px;"></div>
+
+      <!-- Link de login -->
+      <div style="text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="color: #6b7280; margin: 0;">
+          ¿Ya tienes cuenta? 
+          <a href="/login.html" class="link">Inicia sesión aquí</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const rolSelect = document.getElementById('rol');
+    const codigoSection = document.getElementById('codigoSection');
+    const codigoInput = document.getElementById('codigo');
+    const passwordInput = document.getElementById('password');
+    const passwordStrengthBar = document.getElementById('passwordStrengthBar');
+
+    // Captchas
+    let captcha1 = {};
+    let captcha2 = {};
+
+    // Generar captcha
+    function generateCaptcha(captchaNum) {
+      const operations = ['+', '-', '*'];
+      const operation = operations[Math.floor(Math.random() * operations.length)];
+      let num1, num2, answer;
+
+      switch(operation) {
+        case '+':
+          num1 = Math.floor(Math.random() * 20) + 1;
+          num2 = Math.floor(Math.random() * 20) + 1;
+          answer = num1 + num2;
+          break;
+        case '-':
+          num1 = Math.floor(Math.random() * 20) + 10;
+          num2 = Math.floor(Math.random() * 10) + 1;
+          answer = num1 - num2;
+          break;
+        case '*':
+          num1 = Math.floor(Math.random() * 10) + 1;
+          num2 = Math.floor(Math.random() * 10) + 1;
+          answer = num1 * num2;
+          break;
+      }
+
+      const captchaData = { num1, num2, operation, answer };
+      
+      if (captchaNum === 1) {
+        captcha1 = captchaData;
+        document.getElementById('captchaQuestion1').textContent = `¿Cuánto es ${num1} ${operation} ${num2}?`;
+        document.getElementById('captchaInput1').value = '';
+      } else {
+        captcha2 = captchaData;
+        document.getElementById('captchaQuestion2').textContent = `¿Cuánto es ${num1} ${operation} ${num2}?`;
+        document.getElementById('captchaInput2').value = '';
+      }
+    }
+
+    // Inicializar captchas
+    generateCaptcha(1);
+    generateCaptcha(2);
+
+    // Botones de refrescar captcha
+    document.getElementById('refreshCaptcha1').addEventListener('click', () => generateCaptcha(1));
+    document.getElementById('refreshCaptcha2').addEventListener('click', () => generateCaptcha(2));
+
+    // Cambiar entre tabs
+    function cambiarTab(tabName) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        cambiarTab(tab.dataset.tab);
+      });
+    });
+
+    // Mostrar/ocultar código según rol
+    rolSelect.addEventListener('change', () => {
+      if (rolSelect.value === 'Cliente') {
+        codigoSection.style.display = 'none';
+        codigoSection.classList.remove('active');
+        codigoInput.required = false;
+      } else {
+        codigoSection.style.display = 'block';
+        codigoSection.classList.add('active');
+        codigoInput.required = true;
+      }
+    });
+
+    // Medidor de fortaleza de contraseña
+    passwordInput.addEventListener('input', () => {
+      const password = passwordInput.value;
+      const strength = calcularFortaleza(password);
+      
+      passwordStrengthBar.className = 'password-strength-bar';
+      
+      if (strength < 30) {
+        passwordStrengthBar.classList.add('strength-weak');
+      } else if (strength < 70) {
+        passwordStrengthBar.classList.add('strength-medium');
+      } else {
+        passwordStrengthBar.classList.add('strength-strong');
+      }
+    });
+
+    function calcularFortaleza(password) {
+      let strength = 0;
+      if (password.length >= 6) strength += 20;
+      if (password.length >= 8) strength += 20;
+      if (password.length >= 10) strength += 10;
+      if (/[a-z]/.test(password)) strength += 10;
+      if (/[A-Z]/.test(password)) strength += 15;
+      if (/[0-9]/.test(password)) strength += 15;
+      if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+      return strength;
+    }
+
+    // SOLICITAR CÓDIGO
+    document.getElementById('requestCodeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const nombre = document.getElementById('nombre').value.trim();
+      const email = document.getElementById('emailRequest').value.trim();
+      const rol = document.getElementById('rolRequest').value;
+      const captchaAnswer = parseInt(document.getElementById('captchaInput1').value);
+      
+      clearMessages();
+      
+      // Validar captcha
+      if (isNaN(captchaAnswer) || captchaAnswer !== captcha1.answer) {
+        showError('❌ Captcha incorrecto. Intenta de nuevo.');
+        generateCaptcha(1);
+        return;
+      }
+      
+      if (!nombre || !email || !rol) {
+        showError('Por favor completa todos los campos');
+        return;
+      }
+
+      const requestBtn = document.getElementById('requestBtn');
+      requestBtn.disabled = true;
+      requestBtn.innerHTML = '⏳ Enviando...';
+      
+      try {
+        const response = await fetch('/api/codigos/solicitar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre, email, rol })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showSuccess('✅ ¡Código enviado! Revisa tu email (y carpeta de spam). Ahora ve a la pestaña "Registrarse".');
+          
+          // Pre-llenar campos en registro
+          setTimeout(() => {
+            document.getElementById('nombreReg').value = nombre;
+            document.getElementById('email').value = email;
+            document.getElementById('rol').value = rol;
+            codigoSection.style.display = 'block';
+            codigoSection.classList.add('active');
+            codigoInput.required = true;
+          }, 1500);
+          
+        } else {
+          showError(data.message || 'Error al solicitar código');
+          generateCaptcha(1);
+        }
+      } catch (err) {
+        showError('No se pudo conectar con el servidor');
+        generateCaptcha(1);
+      } finally {
+        requestBtn.disabled = false;
+        requestBtn.innerHTML = '📨 Solicitar Código';
+      }
+    });
+
+    // REGISTRO
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const nombre = document.getElementById('nombreReg').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = passwordInput.value.trim();
+      const rol = rolSelect.value;
+      const codigo = codigoInput.value.trim().toUpperCase();
+      const captchaAnswer = parseInt(document.getElementById('captchaInput2').value);
+      
+      clearMessages();
+      
+      // Validar captcha
+      if (isNaN(captchaAnswer) || captchaAnswer !== captcha2.answer) {
+        showError('❌ Captcha incorrecto. Intenta de nuevo.');
+        generateCaptcha(2);
+        return;
+      }
+      
+      if (!nombre || !email || !password) {
+        showError('Por favor completa todos los campos');
+        return;
+      }
+
+      if (password.length < 6) {
+        showError('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+
+      if (rol !== 'Cliente' && !codigo) {
+        showError('Debes ingresar un código de verificación para este rol');
+        return;
+      }
+
+      const registerBtn = document.getElementById('registerBtn');
+      registerBtn.disabled = true;
+      registerBtn.innerHTML = '⏳ Creando cuenta...';
+      
+      try {
+        const body = { nombre, email, password, rol };
+        if (rol !== 'Cliente') {
+          body.codigoVerificacion = codigo;
+        }
+
+        const response = await fetch('/api/auth/register-public', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          if (data.usuario.aprobado) {
+            showSuccess('🎉 ¡Registro exitoso! Redirigiendo al login...');
+            setTimeout(() => {
+              window.location.href = '/login.html';
+            }, 2000);
+          } else {
+            showSuccess('✅ ' + data.message + ' Redirigiendo...');
+            setTimeout(() => {
+              window.location.href = '/login.html';
+            }, 4000);
+          }
+        } else {
+          showError(data.message || 'Error en el registro');
+          generateCaptcha(2);
+          registerBtn.disabled = false;
+          registerBtn.innerHTML = '✅ Crear Cuenta';
+        }
+      } catch (err) {
+        showError('No se pudo conectar con el servidor');
+        generateCaptcha(2);
+        registerBtn.disabled = false;
+        registerBtn.innerHTML = '✅ Crear Cuenta';
+      }
+    });
+
+    function showError(message) {
+      const errorMsg = document.getElementById('errorMsg');
+      errorMsg.className = 'warning-box';
+      errorMsg.innerHTML = '❌ ' + message;
+      errorMsg.style.display = 'block';
+      document.getElementById('successMsg').style.display = 'none';
+    }
+
+    function showSuccess(message) {
+      const successMsg = document.getElementById('successMsg');
+      successMsg.className = 'success-box';
+      successMsg.innerHTML = message;
+      successMsg.style.display = 'block';
+      document.getElementById('errorMsg').style.display = 'none';
+    }
+
+    function clearMessages() {
+      document.getElementById('errorMsg').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

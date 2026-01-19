@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Auditorías - Sistema</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">IS</div>
+        <div>
+          <div class="title">📋 Panel de Auditorías</div>
+          <div class="subtitle">Visualización de logs del sistema</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="btnDashboard" class="btn secondary">← Volver</button>
+        <button id="logout" class="btn secondary">Cerrar sesión</button>
+      </div>
+    </header>
+    
+    <div class="grid">
+      <aside>
+        <!-- Filtros -->
+        <div class="card">
+          <h4>🔍 Filtros</h4>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            
+            <label class="small">Acción:</label>
+            <select id="filAccion" class="form-control">
+              <option value="">Todas las acciones</option>
+              <option value="LOGIN">Inicios de sesión</option>
+              <option value="LOGOUT">Cierres de sesión</option>
+              <option value="CREAR_INCIDENTE">Crear incidente</option>
+              <option value="MODIFICAR_INCIDENTE">Modificar incidente</option>
+              <option value="ELIMINAR_INCIDENTE">Eliminar incidente</option>
+              <option value="CREAR_USUARIO">Crear usuario</option>
+              <option value="MODIFICAR_USUARIO">Modificar usuario</option>
+              <option value="ELIMINAR_USUARIO">Eliminar usuario</option>
+              <option value="APROBAR_USUARIO">Aprobar usuario</option>
+              <option value="RECHAZAR_USUARIO">Rechazar usuario</option>
+              <option value="SUBIR_EVIDENCIA">Subir evidencia</option>
+              <option value="GENERAR_REPORTE">Generar reporte</option>
+            </select>
+
+            <label class="small">Usuario:</label>
+            <select id="filUsuario" class="form-control">
+              <option value="">Todos los usuarios</option>
+            </select>
+
+            <label class="small">Fecha Desde:</label>
+            <input id="filFechaDesde" type="date" class="form-control" />
+
+            <label class="small">Fecha Hasta:</label>
+            <input id="filFechaHasta" type="date" class="form-control" />
+
+            <label class="small">IP:</label>
+            <input id="filIP" type="text" class="form-control" placeholder="Ej: 192.168.1.1" />
+
+            <button id="btnFiltrar" class="btn">Aplicar Filtros</button>
+            <button id="btnLimpiar" class="btn secondary">Limpiar</button>
+          </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="card" style="margin-top:12px;">
+          <h4>📊 Estadísticas</h4>
+          <div class="small">Total de registros: <strong><span id="totalLogs">0</span></strong></div>
+          <div class="small">Acciones hoy: <strong><span id="logsHoy">0</span></strong></div>
+          <div class="small">Usuarios activos: <strong><span id="usuariosActivos">0</span></strong></div>
+        </div>
+
+        <!-- Exportar -->
+        <div class="card" style="margin-top:12px;">
+          <h4>💾 Exportar</h4>
+          <button id="btnExportar" class="btn" style="width:100%;">📥 Exportar a Excel</button>
+        </div>
+      </aside>
+
+      <main>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3>📋 Registros de Auditoría</h3>
+            <div class="small">Mostrando: <strong><span id="countMostrados">0</span></strong> registros</div>
+          </div>
+          
+          <div id="listaAuditorias" style="max-height:600px; overflow-y:auto;">
+            <p class="small" style="color:#666; text-align:center; padding:40px;">
+              Aplica filtros para ver los registros de auditoría
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 🤖 CHATBOT FLOTANTE -->
+  <script src="/chatbot.js"></script>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    
+    function cerrarSesion() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login.html';
+    }
+    
+    if (!token) {
+      cerrarSesion();
+    }
+
+    // Verificar permisos (solo Admin y Auditor)
+    if (!['Administrador', 'Auditor'].includes(user?.rol)) {
+      alert('No tienes permisos para acceder a esta página');
+      window.location.href = '/dashboard.html';
+    }
+    
+    async function fetchWithAuth(url, options = {}) {
+      const defaultOptions = {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+        ...options
+      };
+      
+      try {
+        const res = await fetch(url, defaultOptions);
+        
+        if (res.status === 401 || res.status === 403) {
+          alert('Tu sesión ha expirado');
+          cerrarSesion();
+          return null;
+        }
+        
+        return res;
+      } catch (err) {
+        console.error('Error en fetch:', err);
+        throw err;
+      }
+    }
+    
+    document.getElementById('logout').onclick = cerrarSesion;
+    document.getElementById('btnDashboard').onclick = () => window.location.href = '/dashboard.html';
+
+    // ===============================
+    // CARGAR USUARIOS PARA FILTRO
+    // ===============================
+    async function cargarUsuarios() {
+      try {
+        const res = await fetchWithAuth('/api/auditorias/usuarios');
+        if (!res) return;
+        
+        const usuarios = await res.json();
+        const select = document.getElementById('filUsuario');
+        
+        usuarios.forEach(u => {
+          const option = document.createElement('option');
+          option.value = u._id;
+          option.textContent = `${u.nombre} (${u.rol})`;
+          select.appendChild(option);
+        });
+      } catch (err) {
+        console.error('Error cargando usuarios:', err);
+      }
+    }
+
+    // ===============================
+    // CARGAR AUDITORÍAS
+    // ===============================
+    async function cargarAuditorias() {
+      const accion = document.getElementById('filAccion').value;
+      const usuario = document.getElementById('filUsuario').value;
+      const fechaDesde = document.getElementById('filFechaDesde').value;
+      const fechaHasta = document.getElementById('filFechaHasta').value;
+      const ip = document.getElementById('filIP').value;
+      
+      const params = new URLSearchParams();
+      if (accion) params.append('accion', accion);
+      if (usuario) params.append('usuario', usuario);
+      if (fechaDesde) params.append('desde', fechaDesde);
+      if (fechaHasta) params.append('hasta', fechaHasta);
+      if (ip) params.append('ip', ip);
+      
+      try {
+        const res = await fetchWithAuth('/api/auditorias?' + params.toString());
+        if (!res) return;
+        
+        const data = await res.json();
+        mostrarAuditorias(data.logs || []);
+        actualizarEstadisticas(data.stats || {});
+        
+        document.getElementById('countMostrados').textContent = (data.logs || []).length;
+      } catch (err) {
+        console.error('Error cargando auditorías:', err);
+        alert('Error al cargar auditorías');
+      }
+    }
+
+    // ===============================
+    // MOSTRAR AUDITORÍAS EN UI
+    // ===============================
+    function mostrarAuditorias(logs) {
+      const container = document.getElementById('listaAuditorias');
+      
+      if (logs.length === 0) {
+        container.innerHTML = '<p class="small" style="color:#666; text-align:center; padding:40px;">No se encontraron registros con los filtros aplicados</p>';
+        return;
+      }
+      
+      container.innerHTML = logs.map(log => {
+        const fecha = new Date(log.fecha).toLocaleString('es-CO');
+        const badgeColor = log.accion.includes('ERROR') || log.accion.includes('RECHAZAR') ? '#e63946' :
+          log.accion.includes('LOGIN') || log.accion.includes('APROBAR') ? '#90be6d' : '#6c63ff';
+        
+        return `
+          <div class="card" style="margin-bottom:12px; padding:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+              <div style="flex:1;">
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+                  <span class="badge" style="background:${badgeColor}; font-size:11px;">${log.accion}</span>
+                  <span class="small" style="color:#666;">${log.modulo || 'Sistema'}</span>
+                </div>
+                <div style="margin-bottom:6px;">
+                  <strong>${log.usuario?.nombre || 'Sistema'}</strong>
+                  <span class="small" style="color:#666;"> (${log.usuario?.rol || '—'})</span>
+                </div>
+                ${log.detalles ? `<div class="small" style="color:#555; margin-top:4px;">${log.detalles}</div>` : ''}
+              </div>
+              <div style="text-align:right;">
+                <div class="small" style="color:#666;">${fecha}</div>
+                ${log.ip ? `<div class="small" style="color:#999; margin-top:4px;">IP: ${log.ip}</div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ===============================
+    // ACTUALIZAR ESTADÍSTICAS
+    // ===============================
+    function actualizarEstadisticas(stats) {
+      document.getElementById('totalLogs').textContent = stats.total || 0;
+      document.getElementById('logsHoy').textContent = stats.hoy || 0;
+      document.getElementById('usuariosActivos').textContent = stats.usuariosActivos || 0;
+    }
+
+    // ===============================
+    // EXPORTAR A EXCEL
+    // ===============================
+    document.getElementById('btnExportar').addEventListener('click', async () => {
+      const accion = document.getElementById('filAccion').value;
+      const usuario = document.getElementById('filUsuario').value;
+      const fechaDesde = document.getElementById('filFechaDesde').value;
+      const fechaHasta = document.getElementById('filFechaHasta').value;
+      const ip = document.getElementById('filIP').value;
+      
+      const params = new URLSearchParams();
+      if (accion) params.append('accion', accion);
+      if (usuario) params.append('usuario', usuario);
+      if (fechaDesde) params.append('desde', fechaDesde);
+      if (fechaHasta) params.append('hasta', fechaHasta);
+      if (ip) params.append('ip', ip);
+      
+      try {
+        const res = await fetchWithAuth('/api/auditorias?' + params.toString());
+        if (!res) return;
+        
+        const data = await res.json();
+        const logs = data.logs || [];
+        
+        if (logs.length === 0) {
+          alert('No hay registros para exportar');
+          return;
+        }
+        
+        // Preparar datos para Excel
+        const excelData = logs.map(log => ({
+          'Fecha': new Date(log.fecha).toLocaleString('es-CO'),
+          'Usuario': log.usuario?.nombre || 'Sistema',
+          'Rol': log.usuario?.rol || '—',
+          'Acción': log.accion,
+          'Módulo': log.modulo || 'Sistema',
+          'Detalles': log.detalles || '',
+          'IP': log.ip || ''
+        }));
+        
+        // Crear libro de Excel
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Auditorías');
+        
+        // Descargar
+        const fileName = `auditorias_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        
+        console.log('✅ Excel exportado:', fileName);
+      } catch (err) {
+        console.error('Error exportando:', err);
+        alert('Error al exportar a Excel');
+      }
+    });
+
+    // ===============================
+    // FILTROS
+    // ===============================
+    document.getElementById('btnFiltrar').addEventListener('click', cargarAuditorias);
+    
+    document.getElementById('btnLimpiar').addEventListener('click', () => {
+      document.getElementById('filAccion').value = '';
+      document.getElementById('filUsuario').value = '';
+      document.getElementById('filFechaDesde').value = '';
+      document.getElementById('filFechaHasta').value = '';
+      document.getElementById('filIP').value = '';
+      cargarAuditorias();
+    });
+
+    // ===============================
+    // CARGA INICIAL
+    // ===============================
+    cargarUsuarios();
+    cargarAuditorias();
+  </script>
+</body>
+</html>

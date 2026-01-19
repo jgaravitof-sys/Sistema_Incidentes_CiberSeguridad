@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Incidentes - CiberSeguridad</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">IS</div>
+        <div>
+          <div class="title">Sistema de Gestión de Incidentes</div>
+          <div class="subtitle">Empresa de Seguridad Informática</div>
+        </div>
+      </div>
+      <div>
+        <a class="btn" href="/login.html">Iniciar sesión</a>
+      </div>
+    </header>
+
+    <main class="card">
+      <h3>Bienvenido</h3>
+      <p class="small">Registro y seguimiento de incidentes, evidencias y auditoría. Inicia sesión para gestionar o reportar incidentes.</p>
+      <div style="height:18px"></div>
+      <div class="grid">
+        <div>
+          <div class="card">
+            <h4>Registrar incidente</h4>
+            <p class="small">Crea y describe eventos de seguridad. Asigna severidad y adjunta evidencias.</p>
+          </div>
+
+          <div class="card">
+            <h4>Auditoría y reportes</h4>
+            <p class="small">Trazabilidad completa de las acciones del sistema y generación de reportes.</p>
+          </div>
+        </div>
+
+        <aside class="side">
+          <div class="card center">
+            <h4>Quick stats</h4>
+            <div class="stat"><div class="small">Incidentes totales</div><div><strong>—</strong></div></div>
+            <div class="stat"><div class="small">Incidentes abiertos</div><div><strong>—</strong></div></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Verificar si el usuario ya tiene sesión activa
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    // Si hay token, redirigir al dashboard automáticamente
+    if (token && user) {
+      console.log('Sesión activa detectada, redirigiendo al dashboard...');
+      window.location.href = '/dashboard.html';
+    }
+    
+    // Si no hay sesión, el usuario puede ver la página de bienvenida
+    // y hacer clic en "Iniciar sesión" cuando esté listo
+  </script>
+</body>
+</html>

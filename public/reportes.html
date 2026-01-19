@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reportes - Incidentes</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">IS</div>
+        <div>
+          <div class="title">Reportes de Incidentes</div>
+          <div class="subtitle">Filtrados y exportables</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="exportExcel" class="btn">📊 Exportar Excel</button>
+        <button id="exportPDF" class="btn">📄 Exportar PDF</button>
+        <button id="back" class="btn secondary">Volver</button>
+      </div>
+    </header>
+
+    <!-- 🎛️ FILTROS -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3>Filtros del reporte</h3>
+      <div class="form-row" style="margin-bottom:8px;">
+        <label>Desde:</label>
+        <input type="date" id="fechaInicio" class="form-control" />
+        <label>Hasta:</label>
+        <input type="date" id="fechaFin" class="form-control" />
+      </div>
+      <div class="form-row" style="margin-bottom:8px;">
+        <label>Severidad:</label>
+        <select id="filtroSeveridad" class="form-control">
+          <option value="">Todas</option>
+          <option value="Alta">Alta</option>
+          <option value="Media">Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+        <button id="btnFiltrar" class="btn secondary">Aplicar Filtros</button>
+        <button id="btnReset" class="btn secondary">Limpiar</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <main id="reportContainer">
+        <div class="card">
+          <h3>Distribución por severidad</h3>
+          <canvas id="chartSeveridad"></canvas>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h3>Distribución por estado</h3>
+          <canvas id="chartEstado"></canvas>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h3>Resumen general</h3>
+          <div id="resumen"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('back').onclick = () => location.href = '/dashboard.html';
+    const token = localStorage.getItem('token');
+    let todosLosIncidentes = [];
+    let chartSeveridad, chartEstado;
+
+    async function obtenerIncidentes() {
+      const res = await fetch('/api/incidentes', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      todosLosIncidentes = await res.json();
+      generarReportes(todosLosIncidentes);
+    }
+
+    document.getElementById('btnFiltrar').addEventListener('click', () => {
+      const fechaInicio = document.getElementById('fechaInicio').value;
+      const fechaFin = document.getElementById('fechaFin').value;
+      const severidad = document.getElementById('filtroSeveridad').value;
+
+      const filtrados = todosLosIncidentes.filter(i => {
+        const fecha = new Date(i.fechaCreacion);
+        let valido = true;
+        if (fechaInicio && fecha < new Date(fechaInicio)) valido = false;
+        if (fechaFin && fecha > new Date(fechaFin)) valido = false;
+        if (severidad && i.severidad !== severidad) valido = false;
+        return valido;
+      });
+
+      generarReportes(filtrados);
+    });
+
+    document.getElementById('btnReset').addEventListener('click', () => {
+      document.getElementById('fechaInicio').value = '';
+      document.getElementById('fechaFin').value = '';
+      document.getElementById('filtroSeveridad').value = '';
+      generarReportes(todosLosIncidentes);
+    });
+
+    function generarReportes(data) {
+      const porSeveridad = { Alta: 0, Media: 0, Baja: 0 };
+      const porEstado = { Abierto: 0, 'En progreso': 0, Cerrado: 0 };
+
+      data.forEach(i => {
+        porSeveridad[i.severidad] = (porSeveridad[i.severidad] || 0) + 1;
+        porEstado[i.estado] = (porEstado[i.estado] || 0) + 1;
+      });
+
+      if (chartSeveridad) chartSeveridad.destroy();
+      if (chartEstado) chartEstado.destroy();
+
+      chartSeveridad = new Chart(document.getElementById('chartSeveridad'), {
+        type: 'bar',
+        data: {
+          labels: Object.keys(porSeveridad),
+          datasets: [{
+            label: 'Incidentes',
+            data: Object.values(porSeveridad),
+            backgroundColor: ['#e63946', '#f1fa8c', '#90be6d']
+          }]
+        },
+        options: { plugins: { legend: { display: false } } }
+      });
+
+      chartEstado = new Chart(document.getElementById('chartEstado'), {
+        type: 'pie',
+        data: {
+          labels: Object.keys(porEstado),
+          datasets: [{
+            data: Object.values(porEstado),
+            backgroundColor: ['#219ebc', '#ffb703', '#8ecae6']
+          }]
+        }
+      });
+
+      const resumenDiv = document.getElementById('resumen');
+      resumenDiv.innerHTML = `
+        <p><strong>Total de incidentes analizados:</strong> ${data.length}</p>
+        <p><strong>Alta:</strong> ${porSeveridad['Alta'] || 0} &nbsp;&nbsp;
+           <strong>Media:</strong> ${porSeveridad['Media'] || 0} &nbsp;&nbsp;
+           <strong>Baja:</strong> ${porSeveridad['Baja'] || 0}</p>
+        <p><strong>Abiertos:</strong> ${porEstado['Abierto'] || 0}</p>
+        <p><strong>En progreso:</strong> ${porEstado['En progreso'] || 0}</p>
+        <p><strong>Cerrados:</strong> ${porEstado['Cerrado'] || 0}</p>
+      `;
+    }
+
+    // 📄 Exportar a PDF
+    document.getElementById('exportPDF').addEventListener('click', async () => {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const reportElement = document.getElementById('reportContainer');
+      const canvas = await html2canvas(reportElement, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('Reporte_Incidentes_Filtrado.pdf');
+    });
+
+    // 📊 Exportar a Excel
+    document.getElementById('exportExcel').addEventListener('click', () => {
+      const fechaInicio = document.getElementById('fechaInicio').value;
+      const fechaFin = document.getElementById('fechaFin').value;
+      const severidad = document.getElementById('filtroSeveridad').value;
+
+      const filtrados = todosLosIncidentes.filter(i => {
+        const fecha = new Date(i.fechaCreacion);
+        let valido = true;
+        if (fechaInicio && fecha < new Date(fechaInicio)) valido = false;
+        if (fechaFin && fecha > new Date(fechaFin)) valido = false;
+        if (severidad && i.severidad !== severidad) valido = false;
+        return valido;
+      });
+
+      const data = filtrados.map(i => ({
+        Tipo: i.tipo,
+        Severidad: i.severidad,
+        Estado: i.estado,
+        Descripción: i.descripcion,
+        Fecha: new Date(i.fechaCreacion).toLocaleString(),
+        Reportado_por: i.cliente?.nombre || '—'
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Incidentes");
+      XLSX.writeFile(wb, "Reporte_Incidentes.xlsx");
+    });
+
+    obtenerIncidentes();
+  </script>
+</body>
+</html>

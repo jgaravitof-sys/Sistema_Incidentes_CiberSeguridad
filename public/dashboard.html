@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard - Incidentes</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    /* ✅ SPRINT 3: Estilos para Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+      margin-top: 20px;
+    }
+    
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e5e7eb;
+    }
+    
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    
+    .timeline-dot {
+      position: absolute;
+      left: -24px;
+      top: 5px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #6c63ff;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px #e5e7eb;
+    }
+    
+    .timeline-content {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 3px solid #6c63ff;
+    }
+    
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    
+    .timeline-text {
+      color: #555;
+      font-size: 14px;
+    }
+    
+    /* ✅ SPRINT 3: Estilos para Comentarios */
+    .comentario {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 3px solid #6c63ff;
+    }
+    
+    .comentario-propio {
+      background: #e8f4ff;
+      border-left-color: #2196F3;
+    }
+    
+    .comentario-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    
+    .comentario-text {
+      color: #333;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">IS</div>
+        <div>
+          <div class="title">Panel de Incidentes</div>
+          <div class="subtitle">Bienvenido — <span id="userName"></span></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="btnReportes" class="btn secondary">📊 Reportes</button>
+        
+        <!-- ✅ SPRINT 2: Mis Incidentes Asignados -->
+        <button id="btnMisIncidentes" class="btn secondary" style="display:none; background:#10b981; color:white;">
+          📋 Mis Incidentes
+        </button>
+        
+        <!-- Botón de Auditorías -->
+        <button id="btnAuditorias" class="btn secondary" style="display:none; background:#8b5cf6; color:white;">
+          📋 Auditorías
+        </button>
+        
+        <!-- Botones de Administrador -->
+        <button id="btnAprobar" class="btn secondary" style="display:none; background:#10b981; color:white;">
+          ⏳ Aprobar Usuarios
+        </button>
+        <button id="btnUsuarios" class="btn secondary" style="display:none">
+          👥 Gestionar Usuarios
+        </button>
+        
+        <button id="logout" class="btn secondary">Cerrar sesión</button>
+      </div>
+    </header>
+    
+    <div class="grid">
+      <main>
+        <div class="card">
+          <h3>Crear incidente</h3>
+          <form id="incForm">
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <input id="tipo" class="form-control" placeholder="Tipo (phishing, malware...)" required />
+              <select id="severidad" class="form-control">
+                <option value="Media">Media</option>
+                <option value="Alta">Alta</option>
+                <option value="Baja">Baja</option>
+              </select>
+            </div>
+            <textarea id="descripcion" class="form-control" rows="3" placeholder="Descripción detallada" required></textarea>
+            <div style="margin-top:10px"><button class="btn" type="submit">Crear incidente</button></div>
+          </form>
+        </div>
+        
+        <div class="card" style="margin-top:12px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3>Lista de incidentes</h3>
+            <!-- ✅ SPRINT 3: Búsqueda Avanzada -->
+            <input id="busqueda" type="text" class="form-control" placeholder="🔍 Buscar..." style="max-width:250px;" />
+          </div>
+          <div id="lista"></div>
+        </div>
+      </main>
+      
+      <aside>
+        <div class="card">
+          <h4>Filtros</h4>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <select id="filEstado" class="form-control">
+              <option value="">Todos los estados</option>
+              <option>Abierto</option>
+              <option>En progreso</option>
+              <option>Cerrado</option>
+            </select>
+            
+            <!-- ✅ SPRINT 2: Filtro por técnico asignado -->
+            <select id="filTecnico" class="form-control" style="display:none;">
+              <option value="">Todos los técnicos</option>
+            </select>
+            
+            <button id="btnFiltrar" class="btn secondary">Aplicar</button>
+          </div>
+        </div>
+        
+        <div class="card" style="margin-top:12px">
+          <h4>Estadísticas rápidas</h4>
+          <div class="small">Total: <span id="totalInc">0</span></div>
+          <div class="small">Abiertos: <span id="abiertos">0</span></div>
+          <div class="small">En progreso: <span id="progreso">0</span></div>
+          <div class="small">Cerrados: <span id="cerrados">0</span></div>
+        </div>
+        
+        <!-- Notificación de usuarios pendientes -->
+        <div class="card" id="notifPendientes" style="margin-top:12px; background:#fef3c7; border:2px solid #f59e0b; display:none;">
+          <h4 style="color:#92400e; margin:0 0 8px 0;">⚠️ Usuarios Pendientes</h4>
+          <div class="small" style="color:#92400e;">
+            Hay <strong><span id="cantPendientes">0</span></strong> usuario(s) esperando aprobación
+          </div>
+          <button class="btn" style="margin-top:8px; width:100%; background:#f59e0b; color:white;" onclick="window.location.href='/adminUsuarios.html'">
+            Ver ahora
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- 🪟 MODAL DE DETALLE DE INCIDENTE (SPRINT 3: Timeline + Comentarios) -->
+  <div id="modalDetalle" class="modal-overlay">
+    <div class="modal" style="max-width:900px;">
+      <div class="modal-header">
+        <h3>📋 Detalle del Incidente</h3>
+        <button class="modal-close" onclick="cerrarModalDetalle()">×</button>
+      </div>
+      <div class="modal-content" id="modalDetalleContent">
+        <!-- Se llenará dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 🪟 MODAL DE USUARIOS -->
+  <div id="modalUsuarios" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>👥 Gestión de Usuarios</h3>
+        <button class="modal-close" onclick="cerrarModalUsuarios()">×</button>
+      </div>
+      <div class="modal-content">
+        <div class="card" style="background: #f8f9fa;">
+          <h4>➕ Crear Nuevo Usuario</h4>
+          <form id="userFormModal">
+            <div class="form-row">
+              <input id="uNombre" class="form-control" placeholder="Nombre completo" required />
+              <input id="uEmail" class="form-control" placeholder="Correo" type="email" required />
+            </div>
+            <div class="form-row" style="margin-top:8px;">
+              <input id="uPass" class="form-control" placeholder="Contraseña" type="password" required />
+              <select id="uRol" class="form-control">
+                <option>Cliente</option>
+                <option>Analista</option>
+                <option>Técnico</option>
+                <option>Auditor</option>
+                <option>Administrador</option>
+              </select>
+            </div>
+            <div style="margin-top:10px;">
+              <button class="btn" type="submit">Crear usuario</button>
+            </div>
+          </form>
+        </div>
+
+        <div style="margin-top:20px;">
+          <h4>📋 Lista de Usuarios</h4>
+          <div id="userListModal"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🪟 MODAL DE EDITAR USUARIO -->
+  <div id="modalEditarUsuario" class="modal-overlay">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>✏️ Editar Usuario</h3>
+        <button class="modal-close" onclick="cerrarModalEditar()">×</button>
+      </div>
+      <div class="modal-content">
+        <form id="editUserForm">
+          <input type="hidden" id="editUserId" />
+          <div style="margin-bottom:12px;">
+            <label style="font-size:13px; display:block; margin-bottom:4px;">Nombre completo</label>
+            <input id="editNombre" class="form-control" placeholder="Nombre completo" required />
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:13px; display:block; margin-bottom:4px;">Correo electrónico</label>
+            <input id="editEmail" class="form-control" placeholder="Correo" type="email" required />
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:13px; display:block; margin-bottom:4px;">Rol</label>
+            <select id="editRol" class="form-control">
+              <option>Cliente</option>
+              <option>Analista</option>
+              <option>Técnico</option>
+              <option>Auditor</option>
+              <option>Administrador</option>
+            </select>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:13px; display:block; margin-bottom:4px;">
+              Nueva contraseña <span style="color:#999;">(dejar en blanco para no cambiar)</span>
+            </label>
+            <input id="editPassword" class="form-control" placeholder="Nueva contraseña (opcional)" type="password" />
+          </div>
+          <div style="display:flex; gap:8px; margin-top:16px;">
+            <button class="btn" type="submit">Guardar cambios</button>
+            <button class="btn secondary" type="button" onclick="cerrarModalEditar()">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🤖 CHATBOT FLOTANTE -->
+  <script src="/chatbot.js"></script>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    let tecnicos = []; // Lista de técnicos para asignación
+    let incidenteActualDetalle = null; // Para modal de detalle
+    
+    function cerrarSesion() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login.html';
+    }
+    
+    if (!token) {
+      console.log('No hay token, redirigiendo a login...');
+      cerrarSesion();
+    }
+    
+    document.getElementById('userName').innerText = user?.nombre || 'Usuario';
+    
+    async function fetchWithAuth(url, options = {}) {
+      const defaultOptions = {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+        ...options
+      };
+      
+      try {
+        const res = await fetch(url, defaultOptions);
+        
+        // ⚠️ SOLO cerrar sesión si el token está realmente expirado/inválido
+        if (res.status === 401) {
+          // 401 = No autenticado (token inválido/expirado)
+          console.log('Token inválido o expirado, cerrando sesión...');
+          alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+          cerrarSesion();
+          return null;
+        }
+        
+        // ✅ 403 = Sin permisos, pero sesión válida - NO cerrar sesión
+        if (res.status === 403) {
+          console.warn('Acceso denegado para esta operación');
+          // No cerrar sesión, solo retornar la respuesta
+          // El código que llamó a fetchWithAuth manejará el error
+        }
+        
+        return res;
+      } catch (err) {
+        console.error('Error en fetch:', err);
+        throw err;
+      }
+    }
+    
+    document.getElementById('logout').onclick = cerrarSesion;
+
+    // ===============================
+    // ✅ MOSTRAR BOTONES SEGÚN ROL
+    // ===============================
+    const btnUsuarios = document.getElementById('btnUsuarios');
+    const btnAprobar = document.getElementById('btnAprobar');
+    const btnAuditorias = document.getElementById('btnAuditorias');
+    const btnMisIncidentes = document.getElementById('btnMisIncidentes');
+    const filTecnico = document.getElementById('filTecnico');
+
+    if (user?.rol === 'Administrador') {
+      btnUsuarios.style.display = 'inline-block';
+      btnAprobar.style.display = 'inline-block';
+      btnAuditorias.style.display = 'inline-block';
+      filTecnico.style.display = 'block'; // Ver filtro de técnicos
+    } else if (user?.rol === 'Auditor') {
+      btnAuditorias.style.display = 'inline-block';
+    }
+    
+    // ✅ SPRINT 2: Mostrar "Mis Incidentes" para técnicos/analistas
+    if (['Técnico', 'Analista'].includes(user?.rol)) {
+      btnMisIncidentes.style.display = 'inline-block';
+      filTecnico.style.display = 'block';
+    }
+
+    // ===============================
+    // ✅ NAVEGACIÓN
+    // ===============================
+    btnAprobar.addEventListener('click', () => {
+      window.location.href = '/adminUsuarios.html';
+    });
+
+    btnAuditorias.addEventListener('click', () => {
+      window.location.href = '/auditorias.html';
+    });
+
+    document.getElementById('btnReportes').addEventListener('click', () => {
+      window.location = '/reportes.html';
+    });
+    
+    // ✅ SPRINT 2: Ver solo mis incidentes asignados
+    btnMisIncidentes.addEventListener('click', () => {
+      cargarIncidentes({ misTareas: true });
+    });
+
+    // ===============================
+    // ✅ CARGAR TÉCNICOS DISPONIBLES
+    // ===============================
+    async function cargarTecnicos() {
+      try {
+        const res = await fetchWithAuth('/api/usuarios');
+        if (!res) return;
+        
+        const usuarios = await res.json();
+        
+        // ✅ FILTRAR SOLO TÉCNICOS, ANALISTAS Y ADMINISTRADORES
+        tecnicos = usuarios.filter(u => 
+          u.rol === 'Técnico' || u.rol === 'Analista' || u.rol === 'Administrador'
+        );
+        
+        console.log('Técnicos disponibles:', tecnicos); // Para debugging
+        
+        // Llenar select de filtro
+        const filTecnicoSelect = document.getElementById('filTecnico');
+        filTecnicoSelect.innerHTML = '<option value="">Todos los técnicos</option>';
+        
+        tecnicos.forEach(t => {
+          const option = document.createElement('option');
+          option.value = t._id;
+          option.textContent = `${t.nombre} (${t.rol})`;
+          filTecnicoSelect.appendChild(option);
+        });
+      } catch (err) {
+        console.error('Error cargando técnicos:', err);
+      }
+    }
+
+    // ===============================
+    // ✅ VERIFICAR USUARIOS PENDIENTES
+    // ===============================
+    async function verificarPendientes() {
+      if (user?.rol !== 'Administrador') return;
+      
+      try {
+        const res = await fetchWithAuth('/api/admin/stats');
+        if (!res) return;
+        
+        const stats = await res.json();
+        const pendientes = stats.usuarios.pendientes || 0;
+        
+        if (pendientes > 0) {
+          document.getElementById('notifPendientes').style.display = 'block';
+          document.getElementById('cantPendientes').textContent = pendientes;
+        }
+      } catch (err) {
+        console.error('Error verificando pendientes:', err);
+      }
+    }
+
+    // ===============================
+    // CAMBIAR ESTADO DE INCIDENTE
+    // ===============================
+    async function cambiarEstado(incidenteId, nuevoEstado) {
+      try {
+        const res = await fetchWithAuth(`/api/incidentes/${incidenteId}/estado`, {
+          method: 'PATCH',
+          body: JSON.stringify({ estado: nuevoEstado })
+        });
+        if (!res) return;
+        if (res.ok) {
+          const data = await res.json();
+          console.log('✅ Estado actualizado:', data);
+          alert(`Estado cambiado a: ${nuevoEstado}`);
+          cargarIncidentes();
+        } else {
+          const error = await res.json();
+          alert(error.message || 'Error al cambiar estado');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        alert('Error al cambiar estado');
+      }
+    }
+    
+    // ===============================
+    // ✅ SPRINT 2: ASIGNAR TÉCNICO
+    // ===============================
+    async function asignarTecnico(incidenteId, tecnicoId) {
+      if (!tecnicoId) {
+        alert('Selecciona un técnico');
+        return;
+      }
+      
+      try {
+        const res = await fetchWithAuth(`/api/incidentes/${incidenteId}/asignar`, {
+          method: 'PATCH',
+          body: JSON.stringify({ tecnicoId })
+        });
+        
+        if (!res) return;
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log('✅ Técnico asignado:', data);
+          alert('Técnico asignado correctamente. Se le ha enviado una notificación por email.');
+          cargarIncidentes();
+        } else {
+          const error = await res.json();
+          alert(error.message || 'Error al asignar técnico');
+        }
+      } catch (err) {
+        console.error('Error asignando técnico:', err);
+        alert('Error al asignar técnico');
+      }
+    }
+
+    // ===============================
+    // ✅ SPRINT 3: VER DETALLE (Timeline + Comentarios)
+    // ===============================
+    async function verDetalle(incidenteId) {
+      try {
+        const res = await fetchWithAuth(`/api/incidentes/${incidenteId}`);
+        if (!res) return;
+        
+        const incidente = await res.json();
+        incidenteActualDetalle = incidente;
+        
+        mostrarModalDetalle(incidente);
+      } catch (err) {
+        console.error('Error cargando detalle:', err);
+        alert('Error al cargar detalle del incidente');
+      }
+    }
+    
+    function mostrarModalDetalle(inc) {
+      const modal = document.getElementById('modalDetalle');
+      const content = document.getElementById('modalDetalleContent');
+      
+      const badgeClass = inc.severidad === 'Alta' ? 'badge high' :
+        (inc.severidad === 'Media' ? 'badge medium' : 'badge low');
+      
+      let estadoBadge = '';
+      if (inc.estado === 'Abierto') {
+        estadoBadge = '<span class="badge high">Abierto</span>';
+      } else if (inc.estado === 'En progreso') {
+        estadoBadge = '<span class="badge medium">En progreso</span>';
+      } else {
+        estadoBadge = '<span class="badge low">Cerrado</span>';
+      }
+      
+      // Timeline HTML
+      let timelineHTML = '';
+      if (inc.historial && inc.historial.length > 0) {
+        timelineHTML = inc.historial.map(h => `
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <strong>${h.usuario?.nombre || 'Sistema'}</strong>
+                <span class="small" style="color:#999;">${new Date(h.fecha).toLocaleString('es-CO')}</span>
+              </div>
+              <div class="timeline-text">${h.accion}</div>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        timelineHTML = '<p class="small" style="color:#666;">No hay historial disponible</p>';
+      }
+      
+      // Comentarios HTML
+      let comentariosHTML = '';
+      if (inc.comentarios && inc.comentarios.length > 0) {
+        comentariosHTML = inc.comentarios.map(c => {
+          const esPropio = c.usuario?._id === user._id;
+          return `
+            <div class="comentario ${esPropio ? 'comentario-propio' : ''}">
+              <div class="comentario-header">
+                <strong>${c.usuario?.nombre || 'Usuario'}</strong>
+                <span class="small">${new Date(c.fecha).toLocaleString('es-CO')}</span>
+                ${c.esInterno ? '<span class="badge" style="background:#f59e0b; font-size:10px;">Interno</span>' : ''}
+              </div>
+              <div class="comentario-text">${c.texto}</div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        comentariosHTML = '<p class="small" style="color:#666;">No hay comentarios aún</p>';
+      }
+      
+      content.innerHTML = `
+        <div class="card" style="background:#f8f9fa;">
+          <div style="display:flex; justify-content:space-between; align-items:start;">
+            <div>
+              <h3 style="margin:0 0 8px 0;">${inc.tipo}</h3>
+              <div class="small" style="color:#666;">
+                Creado: ${new Date(inc.fechaCreacion).toLocaleString('es-CO')} • 
+                Cliente: ${inc.cliente?.nombre || '—'}
+              </div>
+              ${inc.tecnicoAsignado ? `
+                <div class="small" style="color:#666; margin-top:4px;">
+                  👤 Asignado a: <strong>${inc.tecnicoAsignado.nombre}</strong>
+                </div>
+              ` : '<div class="small" style="color:#999; margin-top:4px;">Sin asignar</div>'}
+            </div>
+            <div style="text-align:right;">
+              <div class="${badgeClass}">${inc.severidad}</div>
+              <div style="margin-top:8px;">${estadoBadge}</div>
+            </div>
+          </div>
+          <div style="margin-top:16px; padding-top:16px; border-top:1px solid #ddd;">
+            <strong>Descripción:</strong>
+            <p style="margin:8px 0 0 0;">${inc.descripcion}</p>
+          </div>
+        </div>
+        
+        <div class="card" style="margin-top:16px;">
+          <h4>📜 Timeline del Incidente</h4>
+          <div class="timeline">
+            ${timelineHTML}
+          </div>
+        </div>
+        
+        <div class="card" style="margin-top:16px;">
+          <h4>💬 Comentarios</h4>
+          <div id="listaComentarios" style="max-height:300px; overflow-y:auto; margin-bottom:16px;">
+            ${comentariosHTML}
+          </div>
+          
+          <form id="formComentario" style="border-top:1px solid #ddd; padding-top:16px;">
+            <textarea id="textoComentario" class="form-control" rows="3" placeholder="Escribe un comentario..." required></textarea>
+            <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+              <button class="btn" type="submit">Enviar Comentario</button>
+              ${['Administrador', 'Analista', 'Técnico', 'Auditor'].includes(user?.rol) ? `
+                <label style="font-size:13px; display:flex; align-items:center; gap:4px;">
+                  <input type="checkbox" id="comentarioInterno" />
+                  Comentario interno (no visible para clientes)
+                </label>
+              ` : ''}
+            </div>
+          </form>
+        </div>
+      `;
+      
+      // Event listener para agregar comentario
+      document.getElementById('formComentario').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await agregarComentario(inc._id);
+      });
+      
+      modal.classList.add('active');
+    }
+    
+    function cerrarModalDetalle() {
+      document.getElementById('modalDetalle').classList.remove('active');
+      incidenteActualDetalle = null;
+    }
+    
+    // ✅ SPRINT 3: AGREGAR COMENTARIO
+    async function agregarComentario(incidenteId) {
+      const texto = document.getElementById('textoComentario').value.trim();
+      const esInternoCheckbox = document.getElementById('comentarioInterno');
+      const esInterno = esInternoCheckbox ? esInternoCheckbox.checked : false;
+      
+      if (!texto) return;
+      
+      try {
+        const res = await fetchWithAuth(`/api/incidentes/${incidenteId}/comentarios`, {
+          method: 'POST',
+          body: JSON.stringify({ texto, esInterno })
+        });
+        
+        if (!res) return;
+        
+        if (res.ok) {
+          document.getElementById('textoComentario').value = '';
+          if (esInternoCheckbox) esInternoCheckbox.checked = false;
+          
+          // Recargar detalle
+          verDetalle(incidenteId);
+        } else {
+          const error = await res.json();
+          alert(error.message || 'Error al agregar comentario');
+        }
+      } catch (err) {
+        console.error('Error agregando comentario:', err);
+        alert('Error al agregar comentario');
+      }
+    }
+
+    // ===============================
+    // INCIDENTES
+    // ===============================
+    async function cargarIncidentes(filter = {}) {
+      const params = new URLSearchParams(filter);
+      const res = await fetchWithAuth('/api/incidentes?' + params.toString());
+      
+      if (!res) return;
+      
+      const data = await res.json();
+      const lista = document.getElementById('lista');
+      lista.innerHTML = '';
+      
+      if (data.length === 0) {
+        lista.innerHTML = '<p class="small" style="color:#666;">No hay incidentes registrados</p>';
+        document.getElementById('totalInc').innerText = '0';
+        document.getElementById('abiertos').innerText = '0';
+        document.getElementById('progreso').innerText = '0';
+        document.getElementById('cerrados').innerText = '0';
+        return;
+      }
+      
+      data.forEach(i => {
+        const div = document.createElement('div');
+        div.className = 'incident';
+        const badgeClass = i.severidad === 'Alta' ? 'badge high' :
+          (i.severidad === 'Media' ? 'badge medium' : 'badge low');
+        
+        let estadoHTML = '';
+        if (i.estado === 'Abierto') {
+          estadoHTML = '<span class="badge high">Abierto</span>';
+        } else if (i.estado === 'En progreso') {
+          estadoHTML = '<span class="badge medium">En progreso</span>';
+        } else {
+          estadoHTML = '<span class="badge low">Cerrado</span>';
+        }
+        
+        // ✅ SPRINT 2: Dropdown de asignación (solo Admin/Analista)
+        let asignacionHTML = '';
+        if (['Administrador', 'Analista'].includes(user?.rol)) {
+          const tecnicoAsignadoId = i.tecnicoAsignado?._id || i.responsable?._id || '';
+          asignacionHTML = `
+            <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+              <strong style="font-size:13px;">Asignar a:</strong>
+              <select class="form-control" style="width:auto; flex:1;" onchange="asignarTecnico('${i._id}', this.value)">
+                <option value="">Seleccionar técnico...</option>
+                ${tecnicos.map(t => `
+                  <option value="${t._id}" ${tecnicoAsignadoId === t._id ? 'selected' : ''}>
+                    ${t.nombre} (${t.rol})
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+          `;
+        } else if (i.tecnicoAsignado) {
+          asignacionHTML = `
+            <div class="small" style="margin-top:8px; color:#666;">
+              👤 Asignado a: <strong>${i.tecnicoAsignado.nombre}</strong>
+            </div>
+          `;
+        }
+        
+        div.innerHTML = `
+          <div class="incident-left">
+            <strong>${i.tipo}</strong>
+            <div class="incident-meta">
+              ${new Date(i.fechaCreacion).toLocaleString()} • 
+              Reportado por: ${i.cliente?.nombre || '—'}
+            </div>
+            <div style="margin-top:8px">${i.descripcion}</div>
+            
+            ${asignacionHTML}
+            
+            <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+              <strong style="font-size:13px;">Cambiar estado:</strong>
+              <select class="form-control" style="width:auto;" onchange="cambiarEstado('${i._id}', this.value)">
+                <option value="${i.estado}" selected>${i.estado}</option>
+                ${i.estado !== 'Abierto' ? '<option value="Abierto">Abierto</option>' : ''}
+                ${i.estado !== 'En progreso' ? '<option value="En progreso">En progreso</option>' : ''}
+                ${i.estado !== 'Cerrado' ? '<option value="Cerrado">Cerrado</option>' : ''}
+              </select>
+            </div>
+            
+            <!-- ✅ SPRINT 3: Botón Ver Detalle -->
+            <div style="margin-top:12px;">
+              <button class="btn secondary btn-small" onclick="verDetalle('${i._id}')">
+                📋 Ver Detalle & Comentarios
+              </button>
+            </div>
+            
+            <form class="evidenceForm" data-id="${i._id}" style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <input type="file" name="file" class="form-control" style="flex:1" />
+              <button class="btn btn-small" type="submit">Subir evidencia</button>
+            </form>
+          </div>
+          <div style="text-align:right">
+            <div class="${badgeClass}">${i.severidad}</div>
+            <div style="margin-top:8px">${estadoHTML}</div>
+          </div>
+        `;
+        lista.appendChild(div);
+      });
+      
+      document.querySelectorAll('.evidenceForm').forEach(f => {
+        f.addEventListener('submit', async ev => {
+          ev.preventDefault();
+          const incidenteId = f.dataset.id;
+          const fileInput = f.querySelector('input[type=file]');
+          if (!fileInput.files.length) return alert('Selecciona un archivo');
+          const fd = new FormData();
+          fd.append('file', fileInput.files[0]);
+          const res = await fetch('/api/evidencias/' + incidenteId, {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + token },
+            body: fd
+          });
+          if (res.ok) {
+            alert('Evidencia subida correctamente');
+            cargarIncidentes();
+          } else {
+            const d = await res.json();
+            alert(d.message || 'Error al subir evidencia');
+          }
+        });
+      });
+      
+      const total = data.length;
+      const abiertos = data.filter(x => x.estado === 'Abierto').length;
+      const progreso = data.filter(x => x.estado === 'En progreso').length;
+      const cerrados = data.filter(x => x.estado === 'Cerrado').length;
+      document.getElementById('totalInc').innerText = total;
+      document.getElementById('abiertos').innerText = abiertos;
+      document.getElementById('progreso').innerText = progreso;
+      document.getElementById('cerrados').innerText = cerrados;
+    }
+
+    document.getElementById('incForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const tipo = document.getElementById('tipo').value;
+      const severidad = document.getElementById('severidad').value;
+      const descripcion = document.getElementById('descripcion').value;
+      const res = await fetchWithAuth('/api/incidentes', {
+        method: 'POST',
+        body: JSON.stringify({ tipo, severidad, descripcion })
+      });
+      if (!res) return;
+      const d = await res.json();
+      if (res.ok) {
+        alert('Incidente creado');
+        document.getElementById('incForm').reset();
+        cargarIncidentes();
+      } else {
+        alert(d.message || 'Error al crear incidente');
+      }
+    });
+
+    document.getElementById('btnFiltrar').addEventListener('click', () => {
+      const estado = document.getElementById('filEstado').value;
+      const tecnico = document.getElementById('filTecnico').value;
+      const filtro = {};
+      if (estado) filtro.estado = estado;
+      if (tecnico) filtro.tecnico = tecnico;
+      cargarIncidentes(filtro);
+    });
+    
+    // ✅ SPRINT 3: Búsqueda en tiempo real
+    let searchTimeout;
+    document.getElementById('busqueda').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(async () => {
+        const query = e.target.value.trim();
+        if (query.length >= 3) {
+          try {
+            const res = await fetchWithAuth(`/api/incidentes/buscar?q=${encodeURIComponent(query)}`);
+            if (!res) return;
+            const data = await res.json();
+            // Actualizar lista con resultados
+            const lista = document.getElementById('lista');
+            lista.innerHTML = '';
+            if (data.incidentes && data.incidentes.length > 0) {
+              // Usar la misma lógica de renderizado pero con data.incidentes
+              renderizarIncidentes(data.incidentes);
+            } else {
+              lista.innerHTML = '<p class="small" style="color:#666;">No se encontraron incidentes</p>';
+            }
+          } catch (err) {
+            console.error('Error en búsqueda:', err);
+          }
+        } else if (query.length === 0) {
+          cargarIncidentes();
+        }
+      }, 500);
+    });
+    
+    function renderizarIncidentes(incidentes) {
+      const lista = document.getElementById('lista');
+      lista.innerHTML = '';
+      
+      incidentes.forEach(i => {
+        const div = document.createElement('div');
+        div.className = 'incident';
+        const badgeClass = i.severidad === 'Alta' ? 'badge high' :
+          (i.severidad === 'Media' ? 'badge medium' : 'badge low');
+        
+        let estadoHTML = '';
+        if (i.estado === 'Abierto') {
+          estadoHTML = '<span class="badge high">Abierto</span>';
+        } else if (i.estado === 'En progreso') {
+          estadoHTML = '<span class="badge medium">En progreso</span>';
+        } else {
+          estadoHTML = '<span class="badge low">Cerrado</span>';
+        }
+        
+        let asignacionHTML = '';
+        if (['Administrador', 'Analista'].includes(user?.rol)) {
+          const tecnicoAsignadoId = i.tecnicoAsignado?._id || i.responsable?._id || '';
+          asignacionHTML = `
+            <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+              <strong style="font-size:13px;">Asignar a:</strong>
+              <select class="form-control" style="width:auto; flex:1;" onchange="asignarTecnico('${i._id}', this.value)">
+                <option value="">Seleccionar técnico...</option>
+                ${tecnicos.map(t => `
+                  <option value="${t._id}" ${tecnicoAsignadoId === t._id ? 'selected' : ''}>
+                    ${t.nombre} (${t.rol})
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+          `;
+        } else if (i.tecnicoAsignado) {
+          asignacionHTML = `
+            <div class="small" style="margin-top:8px; color:#666;">
+              👤 Asignado a: <strong>${i.tecnicoAsignado.nombre}</strong>
+            </div>
+          `;
+        }
+        
+        div.innerHTML = `
+          <div class="incident-left">
+            <strong>${i.tipo}</strong>
+            <div class="incident-meta">
+              ${new Date(i.fechaCreacion).toLocaleString()} • 
+              Reportado por: ${i.cliente?.nombre || '—'}
+            </div>
+            <div style="margin-top:8px">${i.descripcion}</div>
+            
+            ${asignacionHTML}
+            
+            <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+              <strong style="font-size:13px;">Cambiar estado:</strong>
+              <select class="form-control" style="width:auto;" onchange="cambiarEstado('${i._id}', this.value)">
+                <option value="${i.estado}" selected>${i.estado}</option>
+                ${i.estado !== 'Abierto' ? '<option value="Abierto">Abierto</option>' : ''}
+                ${i.estado !== 'En progreso' ? '<option value="En progreso">En progreso</option>' : ''}
+                ${i.estado !== 'Cerrado' ? '<option value="Cerrado">Cerrado</option>' : ''}
+              </select>
+            </div>
+            
+            <div style="margin-top:12px;">
+              <button class="btn secondary btn-small" onclick="verDetalle('${i._id}')">
+                📋 Ver Detalle & Comentarios
+              </button>
+            </div>
+            
+            <form class="evidenceForm" data-id="${i._id}" style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <input type="file" name="file" class="form-control" style="flex:1" />
+              <button class="btn btn-small" type="submit">Subir evidencia</button>
+            </form>
+          </div>
+          <div style="text-align:right">
+            <div class="${badgeClass}">${i.severidad}</div>
+            <div style="margin-top:8px">${estadoHTML}</div>
+          </div>
+        `;
+        lista.appendChild(div);
+      });
+      
+      // Re-attach event listeners
+      document.querySelectorAll('.evidenceForm').forEach(f => {
+        f.addEventListener('submit', async ev => {
+          ev.preventDefault();
+          const incidenteId = f.dataset.id;
+          const fileInput = f.querySelector('input[type=file]');
+          if (!fileInput.files.length) return alert('Selecciona un archivo');
+          const fd = new FormData();
+          fd.append('file', fileInput.files[0]);
+          const res = await fetch('/api/evidencias/' + incidenteId, {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + token },
+            body: fd
+          });
+          if (res.ok) {
+            alert('Evidencia subida correctamente');
+            cargarIncidentes();
+          } else {
+            const d = await res.json();
+            alert(d.message || 'Error al subir evidencia');
+          }
+        });
+      });
+    }
+
+    // ===============================
+    // MODAL DE USUARIOS
+    // ===============================
+    const modalUsuarios = document.getElementById('modalUsuarios');
+    const modalEditarUsuario = document.getElementById('modalEditarUsuario');
+
+    btnUsuarios.addEventListener('click', () => {
+      modalUsuarios.classList.add('active');
+      cargarUsuariosModal();
+    });
+
+    function cerrarModalUsuarios() {
+      modalUsuarios.classList.remove('active');
+    }
+
+    modalUsuarios.addEventListener('click', (e) => {
+      if (e.target === modalUsuarios) {
+        cerrarModalUsuarios();
+      }
+    });
+
+  async function cargarUsuariosModal() {
+    const list = document.getElementById('userListModal');
+    list.innerHTML = '<p class="small" style="color:#666;">Cargando lista...</p>'; // Muestra un mensaje mientras carga
+
+    try {
+      const res = await fetchWithAuth('/api/usuarios');
+      
+      // 1. Verificación de Autenticación (401/403)
+      if (!res) {
+        list.innerHTML = '<p class="small" style="color:red;">Error: Permiso denegado o token expirado.</p>';
+        return; 
+      }
+      
+      // 2. Verificación de Respuesta Exitosa (ej. 200 OK)
+      if (!res.ok) {
+          const error = await res.json();
+          list.innerHTML = `<p class="small" style="color:red;">Error del servidor: ${error.message || res.statusText}</p>`;
+          return;
+      }
+
+      // 3. Procesamiento de datos (si la respuesta fue exitosa)
+      const data = await res.json();
+      list.innerHTML = ''; // Limpia el mensaje de carga
+      
+      if (data.length === 0) {
+        list.innerHTML = '<p class="small" style="color:#666;">No hay usuarios registrados</p>';
+        return;
+      }
+      
+      // Lógica de renderizado (esta parte es la que crea las tarjetas de usuario)
+      data.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        
+        let badgeClass = 'badge';
+        if (u.rol === 'Administrador') badgeClass += ' high';
+        else if (u.rol === 'Analista' || u.rol === 'Técnico') badgeClass += ' medium';
+        else badgeClass += ' low';
+        
+        div.innerHTML = `
+          <div class="user-info">
+            <strong>${u.nombre}</strong>
+            <div class="user-meta">${u.email}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="${badgeClass}">${u.rol}</span>
+            <div class="user-actions">
+              <button class="btn warning btn-small" onclick="abrirModalEditar('${u._id}')">✏️ Editar</button>
+              <button class="btn danger btn-small" onclick="eliminarUsuario('${u._id}', '${u.nombre}')">🗑️ Eliminar</button>
+            </div>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+
+    } catch (err) {
+      console.error('Error cargando usuarios:', err);
+      list.innerHTML = '<p class="small" style="color:red;">Error inesperado al cargar la lista. Verifique la consola.</p>';
+    }
+  }
+
+    document.getElementById('userFormModal').addEventListener('submit', async e => {
+      e.preventDefault();
+      const nombre = document.getElementById('uNombre').value;
+      const email = document.getElementById('uEmail').value;
+      const password = document.getElementById('uPass').value;
+      const rol = document.getElementById('uRol').value;
+      
+      const res = await fetchWithAuth('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ nombre, email, password, rol })
+      });
+      
+      if (!res) return;
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert('✅ Usuario creado correctamente');
+        document.getElementById('userFormModal').reset();
+        cargarUsuariosModal();
+      } else {
+        alert('❌ ' + (data.message || 'Error al crear usuario'));
+      }
+    });
+
+    function cerrarModalEditar() {
+      modalEditarUsuario.classList.remove('active');
+    }
+
+    modalEditarUsuario.addEventListener('click', (e) => {
+      if (e.target === modalEditarUsuario) {
+        cerrarModalEditar();
+      }
+    });
+
+    async function abrirModalEditar(userId) {
+      try {
+        const res = await fetchWithAuth(`/api/usuarios/${userId}`);
+        if (!res) return;
+        
+        const usuario = await res.json();
+        
+        document.getElementById('editUserId').value = usuario._id;
+        document.getElementById('editNombre').value = usuario.nombre;
+        document.getElementById('editEmail').value = usuario.email;
+        document.getElementById('editRol').value = usuario.rol;
+        document.getElementById('editPassword').value = '';
+        
+        modalEditarUsuario.classList.add('active');
+      } catch (err) {
+        console.error('Error al cargar usuario:', err);
+        alert('Error al cargar los datos del usuario');
+      }
+    }
+
+    document.getElementById('editUserForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      
+      const userId = document.getElementById('editUserId').value;
+      const nombre = document.getElementById('editNombre').value;
+      const email = document.getElementById('editEmail').value;
+      const rol = document.getElementById('editRol').value;
+      const password = document.getElementById('editPassword').value;
+      
+      const body = { nombre, email, rol };
+      if (password.trim() !== '') {
+        body.password = password;
+      }
+      
+      const res = await fetchWithAuth(`/api/usuarios/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(body)
+      });
+      
+      if (!res) return;
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert('✅ Usuario actualizado correctamente');
+        cerrarModalEditar();
+        cargarUsuariosModal();
+      } else {
+        alert('❌ ' + (data.message || 'Error al actualizar usuario'));
+      }
+    });
+
+    async function eliminarUsuario(userId, nombreUsuario) {
+      const confirmar = confirm(`¿Estás seguro de que deseas eliminar al usuario "${nombreUsuario}"?\n\nEsta acción no se puede deshacer.`);
+      
+      if (!confirmar) return;
+      
+      try {
+        const res = await fetchWithAuth(`/api/usuarios/${userId}`, {
+          method: 'DELETE'
+        });
+        
+        if (!res) return;
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert('✅ Usuario eliminado correctamente');
+          cargarUsuariosModal();
+        } else {
+          alert('❌ ' + (data.message || 'Error al eliminar usuario'));
+        }
+      } catch (err) {
+        console.error('Error al eliminar usuario:', err);
+        alert('Error al eliminar el usuario');
+      }
+    }
+
+    // ===============================
+    // CARGA INICIAL
+    // ===============================
+    cargarTecnicos();
+    cargarIncidentes();
+    verificarPendientes();
+  </script>
+</body>
+</html>
